@@ -4,11 +4,11 @@ import { ShoppingCart, User, Menu, X, Package, Droplets, ChevronDown } from "luc
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
+
 import useCart from "@/hooks/useCart";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { count } = useCart();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -67,7 +67,7 @@ export default function Header() {
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => base44.auth.logout("/")} className="text-destructive">Đăng xuất</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => logout()} className="text-destructive">Đăng xuất</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
