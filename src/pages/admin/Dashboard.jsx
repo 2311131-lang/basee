@@ -26,12 +26,20 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const [o, u] = await Promise.all([
-        base44.entities.Order.list("-created_date"),
-        base44.entities.User.list("-created_date"),
-      ]);
-      setOrders(o);
-      setUsers(u);
+      try {
+        const o = await base44.entities.Order.list("-created_date");
+        setOrders(o);
+        const uniqueCustomers = Object.values(
+          o.reduce((map, order) => {
+            const key = order.customer_email || order.customer_phone;
+            if (key && !map[key]) map[key] = order;
+            return map;
+          }, {})
+        );
+        setUsers(uniqueCustomers);
+      } catch (e) {
+        console.error("Dashboard load error:", e);
+      }
       setLoading(false);
     };
     load();
