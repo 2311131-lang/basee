@@ -2,10 +2,18 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-// Simple local auth using localStorage
-// Users are stored as: { email, password, full_name, role, id, created_date }
 const USERS_KEY = 'shop_users';
 const CURRENT_USER_KEY = 'shop_current_user';
+
+// Tài khoản admin cố định
+const ADMIN_ACCOUNT = {
+  id: 'admin-001',
+  email: 'admin@shop.com',
+  password: 'admin123',
+  full_name: 'Quản trị viên',
+  role: 'admin',
+  created_date: '2024-01-01T00:00:00.000Z',
+};
 
 const getUsers = () => {
   try {
@@ -21,13 +29,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
-  const [authError, setAuthError] = useState(null);
+  const [isLoadingPublicSettings] = useState(false);
+  const [authError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings] = useState({ id: 'local', public_settings: {} });
 
   useEffect(() => {
-    // Restore session from localStorage
     try {
       const saved = localStorage.getItem(CURRENT_USER_KEY);
       if (saved) {
@@ -41,6 +48,16 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async ({ email, password }) => {
+    // Kiểm tra tài khoản admin cố định trước
+    if (email === ADMIN_ACCOUNT.email && password === ADMIN_ACCOUNT.password) {
+      const { password: _pw, ...safeAdmin } = ADMIN_ACCOUNT;
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(safeAdmin));
+      setUser(safeAdmin);
+      setIsAuthenticated(true);
+      return safeAdmin;
+    }
+
+    // Kiểm tra tài khoản thường trong localStorage
     const users = getUsers();
     const found = users.find(u => u.email === email && u.password === password);
     if (!found) throw new Error('Email hoặc mật khẩu không đúng');
@@ -52,6 +69,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async ({ email, password, full_name }) => {
+    // Không cho đăng ký trùng email admin
+    if (email === ADMIN_ACCOUNT.email) {
+      throw new Error('Email này đã được sử dụng');
+    }
     const users = getUsers();
     if (users.find(u => u.email === email)) {
       throw new Error('Email này đã được đăng ký');
@@ -61,7 +82,7 @@ export const AuthProvider = ({ children }) => {
       email,
       password,
       full_name: full_name || email.split('@')[0],
-      role: users.length === 0 ? 'admin' : 'user', // first user is admin
+      role: 'user', // Khách hàng thường — chỉ admin@shop.com mới là admin
       created_date: new Date().toISOString(),
     };
     saveUsers([...users, newUser]);
@@ -83,13 +104,8 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/login';
   };
 
-  const checkUserAuth = () => {
-    // Already handled in useEffect
-  };
-
-  const checkAppState = () => {
-    // No-op for local auth
-  };
+  const checkUserAuth = () => {};
+  const checkAppState = () => {};
 
   return (
     <AuthContext.Provider value={{
