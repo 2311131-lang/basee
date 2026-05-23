@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,19 +7,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
 import { PRODUCT, formatPrice } from "@/lib/productData";
 import useCart from "@/hooks/useCart";
 import { CheckCircle, Loader2, CreditCard, Wallet, Banknote } from "lucide-react";
 
-const ORDERS_KEY = "shop_orders";
 const banks = ["Vietcombank", "MB Bank", "Techcombank", "BIDV", "ACB"];
-
-function saveOrder(order) {
-  try {
-    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-    localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...orders]));
-  } catch {}
-}
 
 export default function Checkout() {
   const { user } = useAuth();
@@ -31,19 +24,6 @@ export default function Checkout() {
   const [orderCode, setOrderCode] = useState("");
   const [payment, setPayment] = useState("COD");
   const [bankName, setBankName] = useState("");
-
-  // Đọc cart từ localStorage ngay khi mount (tránh timing issue với React state)
-  const [checkoutItems, setCheckoutItems] = useState([]);
-  const [checkoutTotal, setCheckoutTotal] = useState(0);
-
-  useEffect(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem("smart_lowcost_cart") || "[]");
-      setCheckoutItems(raw);
-      setCheckoutTotal(raw.reduce((s, i) => s + i.price * i.quantity, 0));
-    } catch {}
-  }, []);
-
   const [form, setForm] = useState({
     name: user?.full_name || "",
     phone: "",
@@ -65,8 +45,8 @@ export default function Checkout() {
       toast({ title: "Vui lòng điền đầy đủ thông tin", variant: "destructive" });
       return;
     }
-    if (checkoutItems.length === 0) {
-      toast({ title: "Giỏ hàng trống", description: "Vui lòng thêm sản phẩm trước khi thanh toán.", variant: "destructive" });
+    if (items.length === 0) {
+      toast({ title: "Giỏ hàng trống", variant: "destructive" });
       return;
     }
 
@@ -74,7 +54,7 @@ export default function Checkout() {
     const code = "DH" + Date.now().toString().slice(-8);
     const address = `${form.street}, ${form.ward}, ${form.district}, ${form.city}`;
 
-    const order = {
+    await base44.entities.Order.create({
       order_code: code,
       customer_name: form.name,
       customer_phone: form.phone,
@@ -86,23 +66,17 @@ export default function Checkout() {
       street: form.street,
       payment_method: payment,
       bank_name: payment === "bank_transfer" ? bankName : "",
-      quantity: checkoutItems.reduce((s, i) => s + i.quantity, 0),
-      total: checkoutTotal,
+      quantity: items.reduce((s, i) => s + i.quantity, 0),
+      total,
       status: "pending",
-      items: checkoutItems.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
-      created_date: new Date().toISOString(),
-    };
+      items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+    });
 
-    saveOrder(order);
     clearCart();
-    setCheckoutItems([]);
-
-    setTimeout(() => {
-      setOrderCode(code);
-      setLoading(false);
-      setSuccess(true);
-      toast({ title: "Đặt hàng thành công!", description: `Mã đơn: ${code}` });
-    }, 800);
+    setOrderCode(code);
+    setLoading(false);
+    setSuccess(true);
+    toast({ title: "Đặt hàng thành công!", description: `Mã đơn: ${code}` });
   };
 
   if (success) {
@@ -187,22 +161,18 @@ export default function Checkout() {
         {/* Summary */}
         <div className="bg-white border rounded-xl p-6 h-fit sticky top-20">
           <h3 className="font-semibold mb-4">Đơn hàng</h3>
-          {checkoutItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Không có sản phẩm</p>
-          ) : (
-            checkoutItems.map(item => (
-              <div key={item.id} className="flex justify-between text-sm py-2 border-b">
-                <span className="truncate mr-2">{item.name} x{item.quantity}</span>
-                <span className="shrink-0 font-medium">{formatPrice(item.price * item.quantity)}</span>
-              </div>
-            ))
-          )}
+          {items.map(item => (
+            <div key={item.id} className="flex justify-between text-sm py-2 border-b">
+              <span className="truncate mr-2">{item.name} x{item.quantity}</span>
+              <span className="shrink-0 font-medium">{formatPrice(item.price * item.quantity)}</span>
+            </div>
+          ))}
           <div className="flex justify-between text-sm py-2"><span className="text-muted-foreground">Vận chuyển</span><span className="text-green-600">Miễn phí</span></div>
           <div className="border-t pt-3 flex justify-between font-bold text-lg mt-2">
-            <span>Tổng</span><span className="text-primary">{formatPrice(checkoutTotal)}</span>
+            <span>Tổng</span><span className="text-primary">{formatPrice(total)}</span>
           </div>
           <Button type="submit" disabled={loading} className="w-full mt-4 bg-primary hover:bg-primary/90" size="lg">
-            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Đang xử lý...</> : "Mua ngay"}
+            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Đang xử lý...</> : "Đặt hàng"}
           </Button>
         </div>
       </form>
