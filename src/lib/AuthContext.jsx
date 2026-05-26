@@ -8,7 +8,7 @@ const CURRENT_USER_KEY = 'shop_current_user';
 // Tài khoản admin cố định
 const ADMIN_ACCOUNT = {
   id: 'admin-001',
-  email: '2311131@dlu.edu.vn', // 
+  email: 'admin@shop.com',
   password: 'admin123',
   full_name: 'Quản trị viên',
   role: 'admin',
