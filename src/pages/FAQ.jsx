@@ -7,7 +7,6 @@ const faqs = [
   { q: "Có bảo hành không?", a: "Có! Sản phẩm được bảo hành 24 tháng. Trong thời gian bảo hành, mọi lỗi do nhà sản xuất sẽ được sửa chữa miễn phí." },
   { q: "IoT hoạt động như thế nào?", a: "Hệ thống IoT sử dụng ESP32 kết nối WiFi, đo TDS, pH, độ đục real-time và hiển thị trên app điện thoại. Bạn có thể theo dõi chất lượng nước mọi lúc mọi nơi." },
   { q: "Máy có phù hợp cho nước giếng không?", a: "Có! Hệ thống lọc 7 tầng có khả năng xử lý nước giếng, loại bỏ kim loại nặng Fe, Mn, As, Pb hiệu quả." },
-  { q: "Tiêu thụ điện bao nhiêu?", a: "Máy tiêu thụ khoảng 30W, rất tiết kiệm điện. Chi phí điện chỉ khoảng 10.000₫/tháng." },
 ];
 
 export default function FAQ() {
